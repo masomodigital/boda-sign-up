@@ -5,61 +5,152 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Bodaboda Driver</title>
 <style>
-  body { font-family: Arial, sans-serif; margin: 16px; max-width:600px; }
+  /* Reset & Body */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #6fb1fc, #4364f7);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 16px;
+  }
+
+  /* Container */
+  .container {
+    background: white;
+    padding: 24px 32px;
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+    width: 100%;
+    max-width: 450px;
+  }
+
+  h2 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #1976d2;
+  }
+
+  label {
+    display: block;
+    margin-top: 12px;
+    font-weight: 600;
+    color: #333;
+  }
+
+  input, select {
+    padding: 10px;
+    margin-top: 6px;
+    width: 100%;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+    transition: border 0.2s, box-shadow 0.2s;
+  }
+
+  input:focus, select:focus {
+    border-color: #1976d2;
+    box-shadow: 0 0 5px rgba(25, 118, 210, 0.5);
+    outline: none;
+  }
+
+  button {
+    margin-top: 16px;
+    padding: 12px;
+    width: 100%;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    color: white;
+    background: #1976d2;
+    transition: background 0.3s, transform 0.1s;
+  }
+
+  button.secondary {
+    background: #4caf50;
+  }
+
+  button:hover {
+    background: #155fa0;
+    transform: translateY(-2px);
+  }
+
+  button.secondary:hover {
+    background: #388e3c;
+    transform: translateY(-2px);
+  }
+
+  p.msg { margin-top: 10px; color: #d32f2f; font-weight: 500; text-align: center; }
+  p.wait { margin-top: 10px; color: #2e7d32; font-weight: bold; text-align: center; }
   .hidden { display: none; }
-  label { display:block; margin-top:12px; font-weight:600; }
-  select, input { padding:8px; margin-top:6px; width:100%; box-sizing:border-box; }
-  button { margin-top:14px; padding:10px; width:100%; background:#1976d2; color:white; border:none; border-radius:4px; cursor:pointer; }
-  button.secondary { background:#4caf50; }
-  p.msg { margin-top:10px; color:#d32f2f; }
-  p.wait { margin-top:10px; color:#2e7d32; font-weight:bold; }
-  .top-info { background:#f5f5f5; padding:10px; border-radius:6px; margin-bottom:12px; }
-  .top-info span { display:block; margin:4px 0; font-weight:500; }
+
+  .top-info {
+    background: #f5f5f5;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+
+  .top-info span {
+    display: block;
+    margin: 6px 0;
+    font-weight: 500;
+    color: #555;
+  }
+
 </style>
 </head>
 <body>
-<h2>Bodaboda Driver — Login</h2>
 
-<!-- LOGIN -->
-<div id="loginSection">
-  <label>National ID</label>
-  <input id="nid" type="text" placeholder="Enter National ID">
-  <label>Password</label>
-  <input id="password" type="password" placeholder="Enter password">
-  <button id="loginBtn" onclick="login()">Login</button>
-  <p id="loginMsg" class="msg"></p>
-  <p id="loginWait" class="wait hidden">Wait please...</p>
-</div>
+<div class="container">
+  <h2>Bodaboda Driver — Login</h2>
 
-<!-- PROFILE -->
-<div id="profileSection" class="hidden">
-  <div class="top-info">
-    <span id="welcomeName">Welcome: ...</span>
-    <span id="userCredits">Credits: ...</span>
-    <label>Status</label>
-    <select id="status" onchange="saveAvailability()">
-      <option value="Available">Available</option>
-      <option value="Busy">Busy</option>
-    </select>
+  <!-- LOGIN -->
+  <div id="loginSection">
+    <label>National ID</label>
+    <input id="nid" type="text" placeholder="Enter National ID">
+    <label>Password</label>
+    <input id="password" type="password" placeholder="Enter password">
+    <button id="loginBtn" onclick="login()">Login</button>
+    <p id="loginMsg" class="msg"></p>
+    <p id="loginWait" class="wait hidden">Wait please...</p>
   </div>
 
-  <h2>Driver Profile</h2>
+  <!-- PROFILE -->
+  <div id="profileSection" class="hidden">
+    <div class="top-info">
+      <span id="welcomeName">Welcome: ...</span>
+      <span id="userCredits">Credits: ...</span>
+      <label>Status</label>
+      <select id="status" onchange="saveAvailability()">
+        <option value="Available">Available</option>
+        <option value="Busy">Busy</option>
+      </select>
+    </div>
 
-  <label>County</label>
-  <select id="county" onchange="onCountyChange()"><option value="">Loading...</option></select>
+    <h2>Driver Profile</h2>
 
-  <label>Constituency</label>
-  <select id="constituency" onchange="onConstituencyChange()"><option value="">Select county first</option></select>
+    <label>County</label>
+    <select id="county" onchange="onCountyChange()"><option value="">Loading...</option></select>
 
-  <label>Ward</label>
-  <select id="ward"><option value="">Select constituency first</option></select>
+    <label>Constituency</label>
+    <select id="constituency" onchange="onConstituencyChange()"><option value="">Select county first</option></select>
 
-  <label>Stage (exact place)</label>
-  <input id="stage" type="text" placeholder="e.g. Kawangware Stage A">
+    <label>Ward</label>
+    <select id="ward"><option value="">Select constituency first</option></select>
 
-  <button class="secondary" onclick="saveProfile()">Save Profile</button>
-  <p id="profileMsg" class="msg"></p>
-  <p id="profileWait" class="wait hidden">Wait please...</p>
+    <label>Stage (exact place)</label>
+    <input id="stage" type="text" placeholder="e.g. Kawangware Stage A">
+
+    <button class="secondary" onclick="saveProfile()">Save Profile</button>
+    <p id="profileMsg" class="msg"></p>
+    <p id="profileWait" class="wait hidden">Wait please...</p>
+  </div>
 </div>
 
 <script>
