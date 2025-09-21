@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bodaboda Driver</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 16px; max-width:600px; }
+  .hidden { display: none; }
+  label { display:block; margin-top:12px; font-weight:600; }
+  select, input { padding:8px; margin-top:6px; width:100%; box-sizing:border-box; }
+  button { margin-top:14px; padding:10px; width:100%; background:#1976d2; color:white; border:none; border-radius:4px; cursor:pointer; }
+  button.secondary { background:#4caf50; }
+  p.msg { margin-top:10px; color:#d32f2f; }
+  p.wait { margin-top:10px; color:#2e7d32; font-weight:bold; }
+  .top-info { background:#f5f5f5; padding:10px; border-radius:6px; margin-bottom:12px; }
+  .top-info span { display:block; margin:4px 0; font-weight:500; }
+</style>
+</head>
+<body>
+<h2>Bodaboda Driver — Login</h2>
+
+<!-- LOGIN -->
+<div id="loginSection">
+  <label>National ID</label>
+  <input id="nid" type="text" placeholder="Enter National ID">
+  <label>Password</label>
+  <input id="password" type="password" placeholder="Enter password">
+  <button id="loginBtn" onclick="login()">Login</button>
+  <p id="loginMsg" class="msg"></p>
+  <p id="loginWait" class="wait hidden">Wait please...</p>
+</div>
+
+<!-- PROFILE -->
+<div id="profileSection" class="hidden">
+  <div class="top-info">
+    <span id="welcomeName">Welcome: ...</span>
+    <span id="userCredits">Credits: ...</span>
+    <label>Status</label>
+    <select id="status" onchange="saveAvailability()">
+      <option value="Available">Available</option>
+      <option value="Busy">Busy</option>
+    </select>
+  </div>
+
+  <h2>Driver Profile</h2>
+
+  <label>County</label>
+  <select id="county" onchange="onCountyChange()"><option value="">Loading...</option></select>
+
+  <label>Constituency</label>
+  <select id="constituency" onchange="onConstituencyChange()"><option value="">Select county first</option></select>
+
+  <label>Ward</label>
+  <select id="ward"><option value="">Select constituency first</option></select>
+
+  <label>Stage (exact place)</label>
+  <input id="stage" type="text" placeholder="e.g. Kawangware Stage A">
+
+  <button class="secondary" onclick="saveProfile()">Save Profile</button>
+  <p id="profileMsg" class="msg"></p>
+  <p id="profileWait" class="wait hidden">Wait please...</p>
+</div>
+
+<script>
+const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbyBSQbJi73mphw5duI451OeSg-K9f0bRKeZDE-LGg6-8iVJbBWA0YbPQ2Ds48BrfWEUmA/exec';
+let currentNID = null;
+let prefillProfile = null;
+
+async function callAPI(func, data={}) {
+  const url = new URL(WEBAPP_URL);
+  url.searchParams.set('func', func);
+  Object.keys(data).forEach(k => url.searchParams.set(k, data[k]));
+  const res = await fetch(url);
+  const json = await res.json();
+  return json;
+}
+
+async function login() {
+  document.getElementById('loginMsg').innerText = '';
+  document.getElementById('loginWait').classList.remove('hidden');
+  const nid = document.getElementById('nid').value.trim();
+  const password = document.getElementById('password').value.trim();
+  if (!nid || !password) {
+    document.getElementById('loginMsg').innerText = 'Enter both National ID and password';
+    document.getElementById('loginWait').classList.add('hidden');
+    return;
+  }
+
+  try {
+    const resp = await callAPI('loginDriver', { nid, password });
+    document.getElementById('loginWait').classList.add('hidden');
+    if (resp.success) {
+      currentNID = resp.nid;
+      document.getElementById('loginSection').classList.add('hidden');
+      document.getElementById('profileSection').classList.remove('hidden');
+      document.getElementById('welcomeName').innerText = "Welcome: " + (resp.name || currentNID);
+      document.getElementById('userCredits').innerText = "Credits: " + (resp.credits || 0);
+      document.getElementById('status').value = resp.status || "Available";
+
+      prefillProfile = await callAPI('getDriverProfile', { nid: currentNID });
+      loadCounties();
+    } else {
+      document.getElementById('loginMsg').innerText = resp.message || 'Login failed';
+    }
+  } catch (err) {
+    document.getElementById('loginMsg').innerText = 'Error: ' + err.message;
+    document.getElementById('loginWait').classList.add('hidden');
+  }
+}
+
+async function loadCounties() {
+  document.getElementById('profileWait').classList.remove('hidden');
+  try {
+    const counties = await callAPI('getCounties');
+    const sel = document.getElementById('county');
+    sel.innerHTML = '<option value="">-- Select County --</option>';
+    counties.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c; opt.textContent = c; sel.appendChild(opt);
+    });
+    if (prefillProfile && prefillProfile.County) {
+      sel.value = prefillProfile.County;
+      onCountyChange();
+    }
+  } catch (err) {
+    console.error(err);
+  } finally {
+    document.getElementById('profileWait').classList.add('hidden');
+  }
+}
+
+async function onCountyChange() {
+  const county = document.getElementById('county').value;
+  const consSel = document.getElementById('constituency');
+  consSel.innerHTML = '<option>Loading...</option>';
+  document.getElementById('ward').innerHTML = '<option value="">Select constituency first</option>';
+  if (!county) { consSel.innerHTML = '<option value="">Select county first</option>'; return; }
+
+  document.getElementById('profileWait').classList.remove('hidden');
+  try {
+    const consts = await callAPI('getConstituencies', { county });
+    consSel.innerHTML = '<option value="">-- Select Constituency --</option>';
+    consts.forEach(c => {
+      const opt = document.createElement('option'); opt.value = c; opt.textContent = c; consSel.appendChild(opt);
+    });
+    if (prefillProfile && prefillProfile.Constituency) {
+      consSel.value = prefillProfile.Constituency;
+      onConstituencyChange();
+    }
+  } catch(err){ console.error(err); }
+  finally { document.getElementById('profileWait').classList.add('hidden'); }
+}
+
+async function onConstituencyChange() {
+  const county = document.getElementById('county').value;
+  const constituency = document.getElementById('constituency').value;
+  const wardSel = document.getElementById('ward');
+  wardSel.innerHTML = '<option>Loading...</option>';
+  if (!county || !constituency) { wardSel.innerHTML = '<option value="">Select constituency first</option>'; return; }
+
+  document.getElementById('profileWait').classList.remove('hidden');
+  try {
+    const wards = await callAPI('getWards', { county, constituency });
+    wardSel.innerHTML = '<option value="">-- Select Ward --</option>';
+    wards.forEach(w => { const opt = document.createElement('option'); opt.value = w; opt.textContent = w; wardSel.appendChild(opt); });
+    if (prefillProfile && prefillProfile.Ward) {
+      wardSel.value = prefillProfile.Ward;
+      if (prefillProfile.Stage) document.getElementById('stage').value = prefillProfile.Stage;
+    }
+  } catch(err){ console.error(err); }
+  finally { document.getElementById('profileWait').classList.add('hidden'); }
+}
+
+async function saveProfile() {
+  const county = document.getElementById('county').value;
+  const constituency = document.getElementById('constituency').value;
+  const ward = document.getElementById('ward').value;
+  const stage = document.getElementById('stage').value.trim();
+
+  document.getElementById('profileMsg').innerText = '';
+  if (!currentNID) { document.getElementById('profileMsg').innerText='Session expired'; return; }
+  if (!county || !constituency || !ward || !stage) { document.getElementById('profileMsg').innerText='Complete all fields'; return; }
+
+  document.getElementById('profileWait').classList.remove('hidden');
+  try {
+    const resp = await callAPI('saveDriverProfile', { nid: currentNID, county, constituency, ward, stage });
+    document.getElementById('profileMsg').innerText = resp.message || 'Saved';
+    prefillProfile = { ...prefillProfile, NationalID: currentNID, County: county, Constituency: constituency, Ward: ward, Stage: stage };
+  } catch(err){ document.getElementById('profileMsg').innerText = 'Error: ' + err.message; }
+  finally { document.getElementById('profileWait').classList.add('hidden'); }
+}
+
+async function saveAvailability() {
+  if (!currentNID) return;
+  const status = document.getElementById('status').value;
+  try { await callAPI('updateDriverStatus', { nid: currentNID, status }); } catch(err){ console.error(err); }
+}
+</script>
+</body>
+</html>
